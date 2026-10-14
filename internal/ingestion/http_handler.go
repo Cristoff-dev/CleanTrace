@@ -97,7 +97,7 @@ func (h *HTTPHandler) CollectLogs(w http.ResponseWriter, r *http.Request) {
 	go func(entries []*domain.LogEntry) {
 		err := h.repo.SaveBatch(context.Background(), entries)
 		if err != nil {
-			fmt.Printf("❌ DB error critical: %v\n", err)
+			fmt.Printf("❌ Critical DB error: %v\n", err)
 		} else {
 			fmt.Println("✅ Batch successfully persisted to the database.")
 		}
