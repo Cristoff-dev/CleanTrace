@@ -1,0 +1,50 @@
+name: CleanTrace CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cleantrace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.x'
+        cache: true
+
+    - name: Run GolangCI-Lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        args: --timeout=3m
+
+    - name: Run Unit Tests with Race Detector
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/cleantrace?sslmode=disable
+      run: go test -v -race -coverprofile=coverage.txt ./...
+
+    - name: Build Binary Verification
+      run: go build -v ./cmd/cleantrace
